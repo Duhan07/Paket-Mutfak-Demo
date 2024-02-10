@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- import leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Leaflet.markercluster CSS ve JS kütüphaneleri -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.js"></script>
+
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+
+    <title>Paket Mutfak</title>
+</head>
+
+<body>
+    <h1>Paket Mutfak</h1>
+
+    <div class="container">
+        <div id="map"></div>
+        <div id="zoom"></div>
+
+    </div>
+    <br>
+    <table>
+        <tr>
+            <th>Adres</th>
+            <th>Enlem</th>
+            <th>Boylam</th>
+            <th></th>
+
+        </tr>
+
+        {% for lat_lng in random_latLng %}
+        <tr data-geometry="{{ lat_lng }}" id="row_{{ loop.index }}">
+                <td id="il_adi_{{ lat_lng[0] }}"></td>
+                <td>{{ lat_lng[0] }}</td>
+                <td>{{ lat_lng[1] }}</td>
+                <td>
+                    <button id="zoom" onclick="ZoomTo.call(this)">Zoom To</button>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+
+
+    <script>
+        
+        var map = L.map('map', {
+            maxZoom: 24
+        }).setView([40.998181, 29.152202], 15);
+
+        var markers = L.markerClusterGroup({
+            maxClusterRadius: 100,
+            iconCreateFunction: function (cluster) {
+                var markers = cluster.getAllChildMarkers();
+                return L.divIcon({ html: markers.length, className: 'mycluster', iconSize: L.point(40, 40) });
+            }
+        });
+
+        {% for latLng in random_latLng %}
+            var latLng = {{ latLng | tojson | safe }};
+            var marker = L.marker([latLng[0], latLng[1]]);
+            markers.addLayer(marker);
+        {% endfor %}
+
+        map.addLayer(markers);
+
+
+
+        var subCircleLocNum = 0;
+        function onSubCircleClick(e, subCircleLat, subCircleLng) {
+            {% for lat_lng in random_latLng %}
+                var distance = haversineDistance(subCircleLat, subCircleLng, {{ lat_lng[0] }}, {{ lat_lng[1] }} ) * 1000;
+                if (distance <= 500) {
+                    subCircleLocNum += 1;
+                }
+            {% endfor %}
+
+
+            var zoomLevel = map.getZoom();
+            console.log(zoomLevel);
+            if (zoomLevel == 16) {
+                var clickedCircle = e.latlng;
+                map.setView([clickedCircle.lat, clickedCircle.lng], 17);
+            }
+            else {
+            var clickedCircle = e.latlng;
+            map.setView(clickedCircle, 16);
+            }
+        }
+
+    </script>
+    <script src="{{ url_for('static', filename='js/static.js') }}" type="text/javascript"></script>
+
+</body>
+
+</html>
